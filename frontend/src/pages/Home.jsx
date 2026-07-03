@@ -7,17 +7,17 @@ export default function Home() {
     const dispatch = useDispatch();
     const navigate = useNavigate();
     
-    // Grab the global state from our Redux store
     const { orderList, status, error } = useSelector((state) => state.orders);
 
     // Fetch the data from the .NET backend as soon as the page loads
     useEffect(() => {
-        if (status === 'idle') {
-            dispatch(fetchOrders());
+        if (status === 'idle') 
+            {dispatch(fetchOrders());
         }
     }, [status, dispatch]);
 
-    // The PDF explicitly requires opening the order when a row is double-clicked
+    
+
     const handleDoubleClick = (id) => {
         navigate(`/order/${id}`);
     };

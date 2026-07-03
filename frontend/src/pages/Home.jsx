@@ -10,12 +10,16 @@ export default function Home() {
     const { orderList, status, error } = useSelector((state) => state.orders);
 
     // Fetch the data from the .NET backend as soon as the page loads
-    useEffect(() => {
-        if (status === 'idle') 
-            {dispatch(fetchOrders());
-        }
-    }, [status, dispatch]);
+    // useEffect(() => {
+    //     if (status === 'idle') 
+    //         {dispatch(fetchOrders());
+    //     }
+    // }, [status, dispatch]);
 
+    // Fetch the freshest data from the .NET backend every time the Home screen loads
+    useEffect(() => {
+        dispatch(fetchOrders());
+    }, [dispatch]);
     
 
     const handleDoubleClick = (id) => {

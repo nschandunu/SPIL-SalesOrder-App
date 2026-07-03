@@ -15,9 +15,11 @@ builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 // Register Repositories
 builder.Services.AddScoped<IClientRepository, ClientRepository>();
 builder.Services.AddScoped<IItemRepository, ItemRepository>();
+builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 // Register Services (Application layer containing business logic)
 builder.Services.AddScoped<IClientService, ClientService>();
 builder.Services.AddScoped<IItemService, ItemService>();
+builder.Services.AddScoped<IOrderService, OrderService>();
 
 // Register the DbContext with the connection string
 builder.Services.AddDbContext<ApplicationDbContext>(options =>

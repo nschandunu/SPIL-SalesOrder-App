@@ -9,6 +9,9 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 // Register AutoMapper
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+// Register Application Services
+builder.Services.AddScoped<IClientService, ClientService>();
+builder.Services.AddScoped<IItemService, ItemService>();
 
 // Register the DbContext with the connection string
 builder.Services.AddDbContext<ApplicationDbContext>(options =>

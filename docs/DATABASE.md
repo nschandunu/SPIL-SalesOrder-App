@@ -6,7 +6,7 @@ This document details the relational database schema for the SPIL Sales Order Ma
 
 ## 🗺️ Entity-Relationship (ER) Diagram
 
-The system relies on a highly normalized, four-table structure to manage clients, products, and order histories.
+The system relies on a normalized, four-table structure to manage clients, products, and order histories.
 
 ```text
 +----------------+       1       +----------------+
@@ -39,6 +39,8 @@ The system relies on a highly normalized, four-table structure to manage clients
                                    +----------------+
 ```
 
+All relationships are enforced through foreign key constraints managed by Entity Framework Core and SQL Server.
+
 ## 🗄️ Table Definitions
 
 ### 1. Client
@@ -47,7 +49,7 @@ Stores the master records for all customers.
 
 - **Id (PK):** Primary identity key.
 - **CustomerName:** The display name of the client.
-- **Address1, Address2, Suburb, State, PostCode:** Standardized address information. These values are automatically populated on the frontend when a client is selected.
+- **Address1, Address2, Suburb, State, PostCode:** Address information used to populate the Sales Order form when a client is selected.
 
 ### 2. Item
 
@@ -82,6 +84,17 @@ Associative entity linking orders and items while preserving line-item details.
 - **Note:** Optional line-item notes.
 - **Price (Snapshot):** The price charged at the time of purchase. This value is copied from `Item.DefaultPrice` so historical invoices remain accurate even if the item's default price changes later.
 - **TaxRate (Snapshot):** The tax rate applied at the time of purchase.
+
+
+## Entity Relationships
+
+Entity Framework Core navigation properties are used to model relationships between entities.
+
+Examples include:
+
+- One **Client** → Many **Orders**
+- One **Order** → Many **OrderItems**
+- One **Item** → Many **OrderItems**
 
 ---
 

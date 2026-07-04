@@ -296,7 +296,7 @@ useEffect(() => {
                                 type="button"
                                 className="border-2 border-black bg-yellow-400 text-black px-6 py-1 font-bold shadow-[2px_2px_0px_rgba(0,0,0,1)] hover:bg-yellow-500 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all flex items-center gap-2"
                             >
-                                📄 Export PDF
+                                🖨️ Print
                             </button>
                         )}
                         <button

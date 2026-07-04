@@ -176,6 +176,7 @@ export default function SalesOrder() {
     // Prepare dropdown options for our custom Select component
     const clientOptions = clients.map(c => ({ label: c.customerName, value: c.id }));
     const itemOptions = itemsList.map(i => ({ label: i.itemCode, value: i.id }));
+    const descriptionOptions = itemsList.map(i => ({ label: i.description, value: i.id }));
 
     // Define table headers
     const tableHeaders = [
@@ -237,7 +238,15 @@ export default function SalesOrder() {
                                     <td className="border-2 border-black p-0">
                                         <Select name="itemId" value={line.itemId} onChange={(e) => handleLineItemChange(index, 'itemId', e.target.value)} options={itemOptions} className="border-none w-full h-full" />
                                     </td>
-                                    <td className="border-2 border-black p-2 bg-gray-100">{line.description}</td>
+                                    <td className="border-2 border-black p-0">
+                                        <Select
+                                            name="itemDescription"
+                                            value={line.itemId}
+                                            onChange={(e) => handleLineItemChange(index, 'itemId', e.target.value)}
+                                            options={descriptionOptions}
+                                            className="border-none w-full h-full bg-gray-100"
+                                        />
+                                    </td>
                                     <td className="border-2 border-black p-0">
                                         <Input name="note" value={line.note} onChange={(e) => handleLineItemChange(index, 'note', e.target.value)} className="border-none w-full h-full p-2" />
                                     </td>

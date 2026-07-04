@@ -6,6 +6,12 @@ This document outlines the RESTful API endpoints exposed by the SPIL Sales Order
 
 During local development, the API base URL is determined by the ASP.NET Core launch profile (for example, `https://localhost:7123/api`).
 
+## 📸 Swagger Overview
+
+The backend provides an interactive OpenAPI (Swagger) interface for exploring, testing, and validating all available REST API endpoints during development.
+
+![Swagger UI](assets/swagger.png)
+
 ---
 
 ## 👥 Clients

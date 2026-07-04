@@ -82,8 +82,8 @@ Associative entity linking orders and items while preserving line-item details.
 - **ItemId (FK):** References the purchased item.
 - **Quantity:** Number of units ordered.
 - **Note:** Optional line-item notes.
-- **Price (Snapshot):** The price charged at the time of purchase. This value is copied from `Item.DefaultPrice` so historical invoices remain accurate even if the item's default price changes later.
-- **TaxRate (Snapshot):** The tax rate applied at the time of purchase.
+- **Price (Snapshot):** The selling price recorded when the order is created. It is copied from `Item.DefaultPrice` so historical invoices remain accurate even if the item's default price changes later.
+- **TaxRate (Snapshot):** The tax rate recorded when the order is created to preserve historical accuracy.
 
 
 ## Entity Relationships

@@ -1,94 +1,115 @@
-# SPIL Labs - Sales Order Management System
+# SPIL Sales Order Management System
 
-## 🚀 Overview
-This is a full-stack web application developed for the SPIL Labs Intern Software Engineer technical assessment. The system handles the creation, management, and calculation of Sales Orders, strictly enforcing data integrity and professional architectural standards.
+## Project Overview
+The SPIL Sales Order Management System is a full-stack web application designed to streamline the creation, management, and export of sales orders. Developed as a technical assessment for SPIL Labs, it features a responsive React frontend and a robust, Clean Architecture .NET 8 Web API backend.
 
-**Author:** Senuka Chandunu  
-**Time Spent:** ~48 Hours
-
----
-
-## 🏗️ Architecture & Engineering Decisions
-
-### The Backend: Clean Architecture (N-Tier)
-The API strictly adheres to Clean Architecture principles to ensure maximum separation of concerns, testability, and scalability:
-* **Domain Layer:** Contains the core enterprise entities (`Client`, `Item`, `Order`, `OrderItem`).
-* **Application Layer:** Houses the business logic (`OrderService`), interfaces, and DTO mappings via AutoMapper.
-* **Infrastructure Layer:** Manages data access via the Repository Pattern and Entity Framework Core.
-* **API Layer:** .NET 8 Web API serving as the entry point, utilizing thin controllers and Dependency Injection.
-
-### Key Backend Features
-* **Server-Side Source of Truth:** The backend does not trust frontend math. All line-item totals (`ExclAmount`, `TaxAmount`, `InclAmount`) and order totals (`TotalExcl`, `TotalTax`, `TotalIncl`) are strictly calculated within the `OrderService` before saving to the database.
-* **Entity Framework Graph Saving:** Complex parent-child database transactions (saving an Order and multiple OrderItems) are handled cleanly using EF Core's graph saving capabilities.
-* **DTO Isolation:** Raw database entities are never exposed to the frontend. Data is mapped to specific Input/Output DTOs using AutoMapper.
-* **Data Validation:** `[Required]` and `[Range]` data annotations are used on Input DTOs to intercept bad requests before they reach the service layer.
-* **Database Seeding:** The `ApplicationDbContext` is configured to automatically seed the `Clients` and `Items` tables with sample data upon migration.
-
-### The Frontend: React + Redux
-* **Framework:** Scaffolded with Vite using React Functional Components & Hooks (strictly following assessment requirements).
-* **State Management:** Redux Toolkit handles global state (e.g., fetching and caching the order list).
-* **Styling:** Tailwind CSS v4 for rapid, responsive, and custom UI development without heavy external component libraries.
-* **Routing:** React Router handles navigation, including the requested double-click-to-edit feature.
+The application allows users to browse existing orders, create new orders with dynamic line-item calculations (exclusive amounts, tax, and inclusive totals), and export finalized invoices as professional PDFs.
 
 ---
 
-## 🛠️ Tech Stack
-
-**Backend**
-* .NET 8.0 Web API
-* C#
-* Entity Framework Core (Code-First)
-* Microsoft SQL Server (Azure SQL Edge for macOS compatibility)
-* AutoMapper
-
-**Frontend**
-* React (Vite)
-* Redux Toolkit
-* React Router DOM
-* Tailwind CSS v4
-* Axios
+## 📸 Screenshots
+- **[Home Dashboard]** - `![Home Dashboard](docs/assets/home.png)`
+- **[Sales Order Form]** - `![Sales Order Form](docs/assets/sales-order.png)`
+- **[PDF Export Preview]** - `![PDF Export](docs/assets/pdf-export.png)`
 
 ---
 
-## ⚙️ Local Setup Instructions
+## 🚀 Tech Stack
 
-### Prerequisites
-* .NET 8 SDK
-* Node.js (v18+)
-* Docker (for the SQL Server instance)
+### Frontend
+- **React (Vite):** Functional components and Hooks.
+- **Redux Toolkit:** Centralized state management for order lists.
+- **React Router DOM:** Client-side navigation.
+- **Tailwind CSS:** Utility-first styling and responsive layouts.
+- **Axios:** API communication.
+- **jsPDF & AutoTable:** Client-side PDF invoice generation.
 
-### 1. Database Setup (Docker)
-This project uses Azure SQL Edge via Docker for Apple Silicon / cross-platform compatibility. Run the following command to spin up the database container:
-```bash
-docker run --cap-add SYS_PTRACE -e 'ACCEPT_EULA=1' -e 'MSSQL_SA_PASSWORD=SuperSecretPass123!' -p 1433:1433 --name spil-sql -d [mcr.microsoft.com/azure-sql-edge](https://mcr.microsoft.com/azure-sql-edge)
+### Backend
+- **.NET 8 Web API:** Core backend framework.
+- **Entity Framework Core:** Code-First ORM.
+- **SQL Server:** Relational database.
+- **AutoMapper:** Entity-to-DTO object mapping.
+
+---
+
+## 🏗️ Architecture Overview
+This project strictly enforces **Separation of Concerns**.
+- The frontend utilizes a component-driven architecture with isolated services and utility functions.
+- The backend follows **Clean Architecture**, ensuring that API controllers remain thin, database interactions are abstracted via the Repository Pattern, and all business rules are isolated in the Application layer.
+
+📖 **Read the full system design in [ARCHITECTURE.md](docs/ARCHITECTURE.md)**
+
+---
+
+## ✨ Key Features
+- **Dynamic Form Handling:** Auto-populating customer details and product descriptions based on database selections.
+- **Real-Time Calculations:** Client-side and server-side calculation of line item totals and taxes.
+- **Enterprise UI:** Custom, reusable Tailwind UI components (Buttons, Inputs, Selects, Tables) reflecting a consistent design system.
+- **PDF Export:** One-click generation of A4-formatted, professional invoice PDFs.
+- **Robust Data Handling:** DTOs prevent over-posting and ensure secure data transfer.
+
+---
+
+## 📂 Project Structure
+
+```text
+SPIL-SALESORDER-APP/
+│
+├── docs/                             # Extended Technical Documentation
+│   ├── ARCHITECTURE.md
+│   ├── API.md
+│   ├── DATABASE.md
+│   ├── SETUP.md
+│   └── DECISIONS.md
+│
+├── frontend/                         # React + Vite UI Application
+│
+├── SPIL.SalesOrder.API/              # Presentation Layer (Controllers)
+├── SPIL.SalesOrder.Application/      # Business Logic (Services, DTOs, Interfaces)
+├── SPIL.SalesOrder.Domain/           # Core Entities & Enums
+├── SPIL.SalesOrder.Infrastructure/   # Data Access (EF Core, Repositories)
+│
+├── SPIL.SalesOrder.sln               # .NET Solution File
+└── README.md                         # Main entry point
 ```
 
-### 2. Backend Initialization
-Navigate to the project root directory and apply the Entity Framework Core migrations to create the database schema and seed the initial data:
+---
 
-```bash
-dotnet ef database update --project SPIL.SalesOrder.Infrastructure --startup-project SPIL.SalesOrder.API
-```
+## 🛠️ Getting Started
 
-Start the .NET API:
+To run this project locally, you will need **Node.js**, **.NET 8 SDK**, and a running instance of **SQL Server**.
 
-```bash
-dotnet run --project SPIL.SalesOrder.API
-```
+📖 **Follow the step-by-step installation guide in [SETUP.md](docs/SETUP.md)**
 
-The API will typically be available at `http://localhost:5191`. You can access the Swagger UI by visiting `http://localhost:5191/swagger`.
+---
 
-### 3. Frontend Initialization
-Open a new terminal, navigate to the frontend directory, install the dependencies, and start the Vite development server:
+## 🔌 API & Database Reference
 
-```bash
-cd frontend
-npm install
-npm run dev
-```
+- **API Endpoints:** View the documented REST endpoints, request structures, and status codes in [API.md](docs/API.md).
+- **Database Design:** View the Entity-Relationship structure and normalization strategy in [DATABASE.md](docs/DATABASE.md).
 
-The React application will typically be available at `http://localhost:5173`. CORS is already configured on the backend to allow requests from this origin.
+---
 
-## Seed Data
+## 💡 Assumptions & Constraints
 
-The application seeds Clients and Items during database initialization to simplify testing and demonstrate the Sales Order workflow without requiring separate master-data management screens.
+- **Seeded Data:** The application automatically seeds Clients and Items during database initialization. This keeps the assessment focused on the Sales Order workflow while allowing for immediate testing.
+- **Order Updates:** For the scope of this project, editing an order's line items utilizes a collection replacement strategy.
+
+📖 **Read the full context on these trade-offs in [DECISIONS.md](docs/DECISIONS.md)**
+
+---
+
+## 🔮 Future Improvements
+
+If this project were to be scaled into a production ERP environment, the following enhancements would be prioritized:
+
+- **Authentication & Authorization:** Implement JWT-based identity management with Role-Based Access Control (RBAC).
+- **Pagination & Filtering:** Apply server-side pagination for the Home screen data grid to handle thousands of orders.
+- **Differential Graph Updates:** Upgrade the line-item update logic to track primary keys on the frontend, allowing for granular database updates (Add/Modify/Remove) to preserve audit histories.
+- **CI/CD Pipeline:** Containerize both applications using Docker and set up automated testing via GitHub Actions.
+
+---
+
+## 📌 Notes
+
+Developed for the **SPIL Labs Technical Assessment**.

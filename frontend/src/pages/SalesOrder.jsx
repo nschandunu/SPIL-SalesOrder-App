@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { fetchOrders } from '../redux/slices/orderSlice';
 import toast from 'react-hot-toast';
-import api from '../services/api';
+import { fetchOrderById, createOrder, updateOrder } from '../services/orderService';
 import { generateInvoicePDF } from '../utils/pdfGenerator';
 import useDropdownData from '../hooks/useDropdownData';
 import { calculateOrderTotals } from '../utils/calculations';
@@ -40,7 +40,7 @@ export default function SalesOrder() {
         const fetchData = async () => {
             try {
                 if (id) {
-                    const orderRes = await api.get(`/Orders/${id}`);
+                    const orderRes = await fetchOrderById(id);
                     const order = orderRes.data;
                     
                     setFormData({
@@ -158,11 +158,11 @@ export default function SalesOrder() {
 
             if (id) {
                 payload.id = parseInt(id);
-                await api.put(`/Orders/${id}`, payload);
+                await updateOrder(id, payload);
                 await dispatch(fetchOrders());
                 toast.success('Order successfully updated!');
             } else {
-                await api.post('/Orders', payload);
+                await createOrder(payload);
                 await dispatch(fetchOrders());
                 toast.success('Order successfully saved!');
             }

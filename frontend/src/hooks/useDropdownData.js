@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
-import api from '../services/api';
+import { fetchClients, fetchItems } from '../services/orderService';
 
 
 // Custom hook to fetch and manage the Clients and Items dropdown data
@@ -14,8 +14,8 @@ export default function useDropdownData() {
         const fetchDropdowns = async () => {
             try {
                 const [clientsRes, itemsRes] = await Promise.all([
-                    api.get('/Clients'),
-                    api.get('/Items')
+                    fetchClients(),
+                    fetchItems()
                 ]);
                 setClients(clientsRes.data);
                 setItemsList(itemsRes.data);

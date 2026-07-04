@@ -88,3 +88,7 @@ npm run dev
 ```
 
 The React application will typically be available at `http://localhost:5173`. CORS is already configured on the backend to allow requests from this origin.
+
+## Seed Data
+
+The application seeds Clients and Items during database initialization to simplify testing and demonstrate the Sales Order workflow without requiring separate master-data management screens.

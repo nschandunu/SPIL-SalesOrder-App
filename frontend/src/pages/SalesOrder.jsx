@@ -12,6 +12,12 @@ export default function SalesOrder() {
 
     const [formData, setFormData] = useState({
         clientId: '',
+        address1: '',
+        address2: '',
+        address3: '',
+        suburb: '',
+        state: '',
+        postCode: '',
         invoiceNo: '',
         invoiceDate: new Date().toISOString().split('T')[0],
         referenceNo: '',
@@ -68,6 +74,37 @@ useEffect(() => {
 
     const handleInputChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
+
+    // Handles auto-filling the address when a customer is selected
+    const handleClientChange = (e) => {
+        const selectedId = e.target.value;
+        const client = clients.find(c => c.id === parseInt(selectedId));
+
+        if (client) {
+            setFormData({
+                ...formData,
+                clientId: selectedId,
+                address1: client.address1 || '',
+                address2: client.address2 || '',
+                address3: client.address3 || '',
+                suburb: client.suburb || '',
+                state: client.state || '',
+                postCode: client.postCode || ''
+            });
+        } else {
+            // Clear fields if they deselect the customer
+            setFormData({
+                ...formData,
+                clientId: selectedId,
+                address1: '',
+                address2: '',
+                address3: '',
+                suburb: '',
+                state: '',
+                postCode: ''
+            });
+        }
     };
 
     const addLineItem = () => {
@@ -201,21 +238,28 @@ useEffect(() => {
                         <div className="space-y-2">
                             <div className="flex items-center">
                                 <label className="w-32 font-bold">Customer Name</label>
-                                <select 
-                                    name="clientId" value={formData.clientId} onChange={handleInputChange}
+                                <select
+                                    name="clientId"
+                                    value={formData.clientId}
+                                    onChange={handleClientChange}
                                     className="flex-1 border-2 border-black p-1 bg-white focus:outline-none"
                                 >
                                     <option value="">-- Select Customer --</option>
                                     {clients.map(c => <option key={c.id} value={c.id}>{c.customerName}</option>)}
                                 </select>
                             </div>
-                            {/* Read-only Address Fields populated by selection */}
+
+                            {/* Editable Address Fields */}
                             {['address1', 'address2', 'address3', 'suburb', 'state', 'postCode'].map((field, idx) => (
                                 <div key={idx} className="flex items-center">
                                     <label className="w-32 capitalize">{field.replace(/([A-Z])/g, ' $1').trim()}</label>
-                                    <div className="flex-1 border-2 border-black p-1 bg-gray-100 min-h-[32px]">
-                                        {selectedClient[field] || ''}
-                                    </div>
+                                    <input
+                                        type="text"
+                                        name={field}
+                                        value={formData[field]}
+                                        onChange={handleInputChange}
+                                        className="flex-1 border-2 border-black p-1 bg-white focus:outline-none"
+                                    />
                                 </div>
                             ))}
                         </div>

@@ -1,6 +1,7 @@
 # SPIL Sales Order Management System
 
 ## Project Overview
+
 The SPIL Sales Order Management System is a full-stack web application designed to streamline the creation, management, and export of sales orders. Developed as a technical assessment for SPIL Labs, it features a responsive React frontend and a robust, Clean Architecture .NET 8 Web API backend.
 
 The application allows users to browse existing orders, create new orders with dynamic line-item calculations (exclusive amounts, tax, and inclusive totals), and export finalized invoices as professional PDFs.
@@ -16,15 +17,29 @@ The application allows users to browse existing orders, create new orders with d
 ---
 
 ## 📸 Screenshots
-- **[Home Dashboard]** - `![Home Dashboard](docs/assets/home.png)`
-- **[Sales Order Form]** - `![Sales Order Form](docs/assets/sales-order.png)`
-- **[PDF Export Preview]** - `![PDF Export](docs/assets/pdf-export.png)`
+
+### Home Dashboard
+
+![Home Dashboard](docs/assets/home.png)
+
+### Sales Order Form
+
+![Sales Order Form](docs/assets/sales-order.png)
+
+### PDF Invoice Preview
+
+![PDF Export](docs/assets/invoice-pdf.png)
+
+### Swagger API
+
+![Swagger](docs/assets/swagger.png)
 
 ---
 
 ## 🚀 Tech Stack
 
 ### Frontend
+
 - **React (Vite):** Functional components and Hooks.
 - **Redux Toolkit:** Centralized state management for order lists.
 - **React Router DOM:** Client-side navigation.
@@ -33,6 +48,7 @@ The application allows users to browse existing orders, create new orders with d
 - **jsPDF & AutoTable:** Client-side PDF invoice generation.
 
 ### Backend
+
 - **.NET 8 Web API:** Core backend framework.
 - **Entity Framework Core:** Code-First ORM.
 - **SQL Server:** Relational database.
@@ -41,7 +57,9 @@ The application allows users to browse existing orders, create new orders with d
 ---
 
 ## 🏗️ Architecture Overview
+
 This project strictly enforces **Separation of Concerns**.
+
 - The frontend utilizes a component-driven architecture with isolated services and utility functions.
 - The backend follows **Clean Architecture**, ensuring that API controllers remain thin, database interactions are abstracted via the Repository Pattern, and all business rules are isolated in the Application layer.
 
@@ -50,6 +68,7 @@ This project strictly enforces **Separation of Concerns**.
 ---
 
 ## ✨ Key Features
+
 - **Dynamic Form Handling:** Auto-populating customer details and product descriptions based on database selections.
 - **Backend-Validated Calculations:** Financial calculations are performed and validated on the backend to ensure data integrity, while the frontend provides real-time feedback to the user.
 - **Enterprise UI:** Custom, reusable Tailwind UI components (Buttons, Inputs, Selects, Tables) reflecting a consistent design system.

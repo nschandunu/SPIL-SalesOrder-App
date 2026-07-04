@@ -1,19 +1,32 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import api from '../services/api';
+import { useDispatch } from 'react-redux';
+import { fetchOrders } from '../redux/slices/orderSlice';
+import toast from 'react-hot-toast';
+import { fetchOrderById, createOrder, updateOrder } from '../services/orderService';
+import { generateInvoicePDF } from '../utils/pdfGenerator';
+import useDropdownData from '../hooks/useDropdownData';
+import { calculateOrderTotals } from '../utils/calculations';
+
+// Import our new architectural primitives
+import Button from '../components/Button';
+import Input from '../components/Input';
+import Select from '../components/Select';
+import Table from '../components/Table';
 
 export default function SalesOrder() {
     const navigate = useNavigate();
+    const dispatch = useDispatch();
     const { id } = useParams();
 
-    // Dropdown Data States
-    const [clients, setClients] = useState([]);
-    const [itemsList, setItemsList] = useState([]);
+    const { clients, itemsList } = useDropdownData();
 
     const [formData, setFormData] = useState({
         clientId: '',
+        address1: '', address2: '', address3: '',
+        suburb: '', state: '', postCode: '',
         invoiceNo: '',
-        invoiceDate: new Date().toISOString().split('T')[0], // YYYY-MM-DD
+        invoiceDate: new Date().toISOString().split('T')[0],
         referenceNo: '',
         note: '',
         orderItems: []
@@ -21,34 +34,78 @@ export default function SalesOrder() {
 
     const [error, setError] = useState(null);
 
-    // 1. Fetch Dropdown Data on Load
+    const selectedClient = clients.find(c => c.id === parseInt(formData.clientId)) || {};
+
     useEffect(() => {
-        const fetchDropdownData = async () => {
+        const fetchData = async () => {
             try {
-                const clientsRes = await api.get('/Clients');
-                const itemsRes = await api.get('/Items');
-                setClients(clientsRes.data);
-                setItemsList(itemsRes.data);
+                if (id) {
+                    const orderRes = await fetchOrderById(id);
+                    const order = orderRes.data;
+                    
+                    setFormData({
+                        clientId: order.clientId,
+                        address1: order.client?.address1 || '',
+                        address2: order.client?.address2 || '',
+                        address3: order.client?.address3 || '',
+                        suburb: order.client?.suburb || '',
+                        state: order.client?.state || '',
+                        postCode: order.client?.postCode || '',
+                        invoiceNo: order.invoiceNo,
+                        invoiceDate: order.invoiceDate.split('T')[0], 
+                        referenceNo: order.referenceNo || '',
+                        note: order.note || '',
+                        orderItems: order.orderItems.map(item => {
+                            const foundItem = itemsList.find(i => i.id === item.itemId);
+                            return {
+                                itemId: item.itemId,
+                                description: foundItem ? foundItem.description : '',
+                                note: item.note || '',
+                                quantity: item.quantity,
+                                price: item.price,
+                                taxRate: item.taxRate
+                            };
+                        })
+                    });
+                }
             } catch (err) {
-                console.error("Failed to load dropdowns", err);
+                toast.error("Failed to load data.");
             }
         };
-        fetchDropdownData();
-    }, []);
+        fetchData();
+    }, [id, itemsList]);
 
-    // 2. Handle Basic Input Changes
     const handleInputChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
-    // 3. Dynamic Line Item Management
+    const handleClientChange = (e) => {
+        const selectedId = e.target.value;
+        const client = clients.find(c => c.id === parseInt(selectedId));
+
+        if (client) {
+            setFormData({
+                ...formData,
+                clientId: selectedId,
+                address1: client.address1 || '',
+                address2: client.address2 || '',
+                address3: client.address3 || '',
+                suburb: client.suburb || '',
+                state: client.state || '',
+                postCode: client.postCode || ''
+            });
+        } else {
+            setFormData({
+                ...formData, clientId: selectedId,
+                address1: '', address2: '', address3: '', suburb: '', state: '', postCode: ''
+            });
+        }
+    };
+
     const addLineItem = () => {
         setFormData({
             ...formData,
-            orderItems: [
-                ...formData.orderItems,
-                { itemId: '', quantity: 1, price: 0, taxRate: 0, note: '' }
-            ]
+            orderItems: [...formData.orderItems, { itemId: '', description: '', note: '', quantity: 1, price: 0, taxRate: 0 }]
         });
     };
 
@@ -58,7 +115,6 @@ export default function SalesOrder() {
         setFormData({ ...formData, orderItems: newItems });
     };
 
-    // 4. Handle Item Selection (Auto-fills price and tax)
     const handleLineItemChange = (index, field, value) => {
         const newItems = [...formData.orderItems];
         newItems[index][field] = value;
@@ -66,190 +122,162 @@ export default function SalesOrder() {
         if (field === 'itemId') {
             const selectedItem = itemsList.find(i => i.id === parseInt(value));
             if (selectedItem) {
+                newItems[index].description = selectedItem.description;
                 newItems[index].price = selectedItem.defaultPrice;
                 newItems[index].taxRate = selectedItem.defaultTaxRate;
+            } else {
+                newItems[index].description = '';
             }
         }
-        
         setFormData({ ...formData, orderItems: newItems });
     };
 
-    // 5. Submit to Backend
+    const totals = calculateOrderTotals(formData.orderItems);
+
     const handleSave = async () => {
         setError(null);
         try {
-            // Validate basic rules before sending
             if (!formData.clientId) return setError("Please select a customer.");
             if (!formData.invoiceNo) return setError("Invoice Number is required.");
             if (formData.orderItems.length === 0) return setError("Please add at least one line item.");
 
-            // Format data for the backend DTO
             const payload = {
-                ...formData,
                 clientId: parseInt(formData.clientId),
-                // Ensure the date is a valid DateTime string for .NET
+                invoiceNo: formData.invoiceNo,
                 invoiceDate: new Date(formData.invoiceDate).toISOString(),
+                referenceNo: formData.referenceNo,
+                note: formData.note,
                 orderItems: formData.orderItems.map(item => ({
-                    ...item,
                     itemId: parseInt(item.itemId),
+                    note: item.note,
                     quantity: parseInt(item.quantity),
                     price: parseFloat(item.price),
                     taxRate: parseFloat(item.taxRate)
                 }))
             };
 
-            await api.post('/Orders', payload);
-            
+            if (id) {
+                payload.id = parseInt(id);
+                await updateOrder(id, payload);
+                await dispatch(fetchOrders());
+                toast.success('Order successfully updated!');
+            } else {
+                await createOrder(payload);
+                await dispatch(fetchOrders());
+                toast.success('Order successfully saved!');
+            }
             navigate('/');
-            
         } catch (err) {
-            console.error(err);
-            // Catch the 400 Bad Request validations from .NET API
-            setError(err.response?.data?.title || "Failed to save order. Check your inputs.");
+            setError(err.response?.data?.title || "Failed to save order.");
         }
     };
 
+
+    // Prepare dropdown options for our custom Select component
+    const clientOptions = clients.map(c => ({ label: c.customerName, value: c.id }));
+    const itemOptions = itemsList.map(i => ({ label: i.itemCode, value: i.id }));
+    const descriptionOptions = itemsList.map(i => ({ label: i.description, value: i.id }));
+
+    // Define table headers
+    const tableHeaders = [
+        { label: "Item Code", className: "w-32" }, { label: "Description" }, { label: "Note" },
+        { label: "Quantity", className: "w-20" }, { label: "Price", className: "w-24" },
+        { label: "Tax %", className: "w-20" }, { label: "Excl Amount", className: "w-24" },
+        { label: "Tax Amount", className: "w-24" }, { label: "Total Amount", className: "w-24" },
+        { label: "X", className: "print:hidden w-10 text-center" }
+    ];
+
     return (
-        <div className="min-h-screen bg-gray-100 p-8 flex justify-center">
-            <div className="w-full max-w-5xl bg-white border-2 border-black rounded shadow-[4px_4px_0px_rgba(0,0,0,1)]">
+        <div className="min-h-screen bg-gray-100 p-8 flex justify-center print:p-0 print:bg-white">
+            <div className="w-full max-w-6xl bg-white border-2 border-black rounded shadow-[4px_4px_0px_rgba(0,0,0,1)] text-sm print:border-none print:shadow-none print:max-w-full print:w-full">
                 
-                {/* Header Actions */}
-                <div className="border-b-2 border-black bg-gray-200 p-4 flex justify-between items-center">
-                    <h1 className="text-xl font-bold">Sales Order Form</h1>
-                    <div className="space-x-4">
-                        <button 
-                            onClick={handleSave}
-                            className="border-2 border-black bg-blue-400 text-white px-6 py-1 font-bold shadow-[2px_2px_0px_rgba(0,0,0,1)] hover:bg-blue-500 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all"
-                        >
-                            Save
-                        </button>
-                        <button 
-                            onClick={() => navigate('/')}
-                            className="border-2 border-black bg-white px-4 py-1 font-semibold shadow-[2px_2px_0px_rgba(0,0,0,1)] hover:bg-gray-50 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all"
-                        >
-                            Cancel
-                        </button>
+                <div className="border-b-2 border-black bg-gray-200 p-4 flex justify-between items-center print:hidden">
+                    <h1 className="text-xl font-bold">Sales Order</h1>
+                    <div className="flex gap-4">
+                        {id && (
+                            <Button
+                                variant="warning"
+                                onClick={() => generateInvoicePDF(formData, selectedClient, itemsList, totals)}
+                            >
+                                🖨️ Print
+                            </Button>
+                        )}
+                        <Button variant="primary" onClick={handleSave}>Save</Button>
+                        <Button variant="secondary" onClick={() => navigate('/')}>Cancel</Button>
                     </div>
                 </div>
 
                 <div className="p-6">
-                    {error && <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 font-bold rounded">{error}</div>}
+                    {error && <div className="mb-4 p-3 bg-red-100 border-2 border-black text-red-700 font-bold rounded">{error}</div>}
 
-                    {/* Order Header Info */}
-                    <div className="grid grid-cols-2 gap-6 mb-8">
-                        <div>
-                            <label className="block font-bold text-sm mb-1">Customer <span className="text-red-500">*</span></label>
-                            <select 
-                                name="clientId" 
-                                value={formData.clientId} 
-                                onChange={handleInputChange}
-                                className="w-full border-2 border-black p-2 bg-gray-50 focus:outline-none focus:bg-white"
-                            >
-                                <option value="">-- Select Customer --</option>
-                                {clients.map(c => <option key={c.id} value={c.id}>{c.customerName}</option>)}
-                            </select>
+                    <div className="grid grid-cols-2 gap-8 mb-8">
+                        <div className="space-y-3">
+                            <Select label="Customer Name" name="clientId" value={formData.clientId} onChange={handleClientChange} options={clientOptions} required />
+                            {['address1', 'address2', 'address3', 'suburb', 'state', 'postCode'].map((field, idx) => (
+                                <Input key={idx} label={field.replace(/([A-Z])/g, ' $1').trim()} name={field} value={formData[field]} onChange={handleInputChange} className="capitalize" />
+                            ))}
                         </div>
-                        <div>
-                            <label className="block font-bold text-sm mb-1">Invoice Number <span className="text-red-500">*</span></label>
-                            <input 
-                                type="text" name="invoiceNo" value={formData.invoiceNo} onChange={handleInputChange}
-                                className="w-full border-2 border-black p-2 bg-gray-50 focus:outline-none focus:bg-white"
-                                placeholder="e.g. INV-1005"
-                            />
-                        </div>
-                        <div>
-                            <label className="block font-bold text-sm mb-1">Date <span className="text-red-500">*</span></label>
-                            <input 
-                                type="date" name="invoiceDate" value={formData.invoiceDate} onChange={handleInputChange}
-                                className="w-full border-2 border-black p-2 bg-gray-50 focus:outline-none focus:bg-white"
-                            />
-                        </div>
-                        <div>
-                            <label className="block font-bold text-sm mb-1">Reference No</label>
-                            <input 
-                                type="text" name="referenceNo" value={formData.referenceNo} onChange={handleInputChange}
-                                className="w-full border-2 border-black p-2 bg-gray-50 focus:outline-none focus:bg-white"
-                            />
+
+                        <div className="space-y-3">
+                            <Input label="Invoice No." name="invoiceNo" value={formData.invoiceNo} onChange={handleInputChange} required />
+                            <Input label="Invoice Date" name="invoiceDate" type="date" value={formData.invoiceDate} onChange={handleInputChange} required />
+                            <Input label="Reference No" name="referenceNo" value={formData.referenceNo} onChange={handleInputChange} />
+                            <div className="flex items-start mt-2 w-full">
+                                <label className="w-32 font-bold text-sm pt-1">Note</label>
+                                <textarea name="note" value={formData.note} onChange={handleInputChange} className="flex-1 border-2 border-black p-1 bg-white focus:outline-none min-h-[120px]"></textarea>
+                            </div>
                         </div>
                     </div>
 
-                    {/* Line Items Section */}
-                    <div className="border-t-2 border-black pt-6">
-                        <div className="flex justify-between items-center mb-4">
-                            <h2 className="text-lg font-bold">Order Lines</h2>
-                            <button 
-                                onClick={addLineItem}
-                                className="border-2 border-black bg-green-400 font-bold px-3 py-1 shadow-[2px_2px_0px_rgba(0,0,0,1)] hover:bg-green-500 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all"
-                            >
-                                + Add Line
-                            </button>
-                        </div>
+                    <Table headers={tableHeaders} className="mb-6">
+                        {formData.orderItems.map((line, index) => {
+                            const excl = (parseInt(line.quantity) || 0) * (parseFloat(line.price) || 0);
+                            const tax = excl * ((parseFloat(line.taxRate) || 0) / 100);
+                            return (
+                                <tr key={index}>
+                                    <td className="border-2 border-black p-0">
+                                        <Select name="itemId" value={line.itemId} onChange={(e) => handleLineItemChange(index, 'itemId', e.target.value)} options={itemOptions} className="border-none w-full h-full" />
+                                    </td>
+                                    <td className="border-2 border-black p-0">
+                                        <Select
+                                            name="itemDescription"
+                                            value={line.itemId}
+                                            onChange={(e) => handleLineItemChange(index, 'itemId', e.target.value)}
+                                            options={descriptionOptions}
+                                            className="border-none w-full h-full bg-gray-100"
+                                        />
+                                    </td>
+                                    <td className="border-2 border-black p-0">
+                                        <Input name="note" value={line.note} onChange={(e) => handleLineItemChange(index, 'note', e.target.value)} className="border-none w-full h-full p-2" />
+                                    </td>
+                                    <td className="border-2 border-black p-0">
+                                        <Input type="number" min="1" value={line.quantity} onChange={(e) => handleLineItemChange(index, 'quantity', e.target.value)} className="border-none w-full h-full text-center p-2" />
+                                    </td>
+                                    <td className="border-2 border-black p-2 bg-gray-100">{parseFloat(line.price || 0).toFixed(2)}</td>
+                                    <td className="border-2 border-black p-2 bg-gray-100 print:hidden">{parseFloat(line.taxRate || 0).toFixed(2)}</td>
+                                    <td className="border-2 border-black p-2 bg-gray-200 print:hidden">{excl.toFixed(2)}</td>
+                                    <td className="border-2 border-black p-2 bg-gray-200 print:hidden">{tax.toFixed(2)}</td>
+                                    <td className="border-2 border-black p-2 bg-gray-200 font-bold">{(excl + tax).toFixed(2)}</td>
+                                    <td className="border-2 border-black p-0 print:hidden">
+                                        <button onClick={() => removeLineItem(index)} className="w-full h-full py-2 bg-red-400 text-black font-bold hover:bg-red-500">X</button>
+                                    </td>
+                                </tr>
+                            );
+                        })}
+                    </Table>
+                    
+                    <div className="mt-2 flex justify-start print:hidden">
+                        <Button variant="secondary" onClick={addLineItem}>+ Add Line Item</Button>
+                    </div>
 
-                        {formData.orderItems.length === 0 ? (
-                            <p className="text-gray-500 italic">No items added yet.</p>
-                        ) : (
-                            <table className="w-full border-collapse border-2 border-black text-left text-sm mb-6">
-                                <thead className="bg-gray-300">
-                                    <tr>
-                                        <th className="border-2 border-black p-2">Item Code</th>
-                                        <th className="border-2 border-black p-2">Quantity</th>
-                                        <th className="border-2 border-black p-2">Unit Price</th>
-                                        <th className="border-2 border-black p-2">Tax Rate %</th>
-                                        <th className="border-2 border-black p-2 w-10 text-center">X</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {formData.orderItems.map((line, index) => (
-                                        <tr key={index}>
-                                            <td className="border-2 border-black p-0">
-                                                <select 
-                                                    value={line.itemId} 
-                                                    onChange={(e) => handleLineItemChange(index, 'itemId', e.target.value)}
-                                                    className="w-full h-full p-2 bg-transparent focus:outline-none"
-                                                >
-                                                    <option value="">Select...</option>
-                                                    {itemsList.map(item => (
-                                                        <option key={item.id} value={item.id}>{item.itemCode}</option>
-                                                    ))}
-                                                </select>
-                                            </td>
-                                            <td className="border-2 border-black p-0">
-                                                <input 
-                                                    type="number" min="1" value={line.quantity} 
-                                                    onChange={(e) => handleLineItemChange(index, 'quantity', e.target.value)}
-                                                    className="w-full p-2 bg-transparent focus:outline-none"
-                                                />
-                                            </td>
-                                            <td className="border-2 border-black p-2 bg-gray-100">
-                                                {line.price.toFixed(2)}
-                                            </td>
-                                            <td className="border-2 border-black p-2 bg-gray-100">
-                                                {line.taxRate.toFixed(2)}%
-                                            </td>
-                                            <td className="border-2 border-black p-0 text-center">
-                                                <button 
-                                                    onClick={() => removeLineItem(index)}
-                                                    className="w-full h-full py-2 bg-red-400 text-white font-bold hover:bg-red-500 transition-colors"
-                                                >
-                                                    X
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        )}
-
-                        <div className="mt-4">
-                            <label className="block font-bold text-sm mb-1">Order Notes</label>
-                            <textarea 
-                                name="note" value={formData.note} onChange={handleInputChange}
-                                className="w-full border-2 border-black p-2 bg-gray-50 focus:outline-none focus:bg-white"
-                                rows="3"
-                                placeholder="Internal notes or instructions..."
-                            ></textarea>
+                    <div className="flex justify-end pr-10 mt-6">
+                        <div className="w-64 space-y-2">
+                            <div className="flex justify-between items-center"><label className="font-bold">Total Excl</label><div className="border-2 border-black bg-gray-200 w-32 px-2 py-1 text-right">{totals.totalExcl.toFixed(2)}</div></div>
+                            <div className="flex justify-between items-center"><label className="font-bold">Total Tax</label><div className="border-2 border-black bg-gray-200 w-32 px-2 py-1 text-right">{totals.totalTax.toFixed(2)}</div></div>
+                            <div className="flex justify-between items-center"><label className="font-bold">Total Incl</label><div className="border-2 border-black bg-gray-300 w-32 px-2 py-1 text-right font-bold">{totals.totalIncl.toFixed(2)}</div></div>
                         </div>
                     </div>
+
                 </div>
             </div>
         </div>

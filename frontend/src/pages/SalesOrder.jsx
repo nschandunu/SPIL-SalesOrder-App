@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import api from '../services/api';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 export default function SalesOrder() {
     const navigate = useNavigate();
@@ -162,6 +164,79 @@ useEffect(() => {
 
     const totals = calculateTotals();
 
+    // Generate PDF Report
+    const generatePDF = () => {
+        const doc = new jsPDF();
+
+        // 1. Report Header
+        doc.setFontSize(20);
+        doc.text("Sales Order Invoice", 14, 22);
+
+        // 2. Customer & Invoice Info
+        doc.setFontSize(11);
+        doc.setTextColor(100);
+
+        // Safely grab the customer name for the report
+        const custName = selectedClient?.customerName || 'Unknown Customer';
+        doc.text(`Customer: ${custName}`, 14, 32);
+        doc.text(`Invoice No: ${formData.invoiceNo || 'N/A'}`, 140, 32);
+        doc.text(`Date: ${formData.invoiceDate}`, 140, 40);
+        if (formData.referenceNo) {
+            doc.text(`Ref No: ${formData.referenceNo}`, 140, 48);
+        }
+
+        // 3. Prepare Table Data
+        const tableColumn = ["Item Code", "Description", "Qty", "Price", "Tax %", "Total"];
+        const tableRows = [];
+
+        formData.orderItems.forEach(item => {
+            const qty = parseInt(item.quantity) || 0;
+            const price = parseFloat(item.price) || 0;
+            const taxRate = parseFloat(item.taxRate) || 0;
+            const excl = qty * price;
+            const tax = excl * (taxRate / 100);
+            const incl = excl + tax;
+
+            // Find the item code
+            const foundItem = itemsList.find(i => i.id === parseInt(item.itemId));
+
+            const itemData = [
+                foundItem ? foundItem.itemCode : 'N/A',
+                item.description || '-',
+                qty,
+                price.toFixed(2),
+                taxRate.toFixed(2),
+                incl.toFixed(2)
+            ];
+            tableRows.push(itemData);
+        });
+
+        // 4. Generate AutoTable (The Vite / ES Module way)
+        autoTable(doc, {
+            startY: 55,
+            head: [tableColumn],
+            body: tableRows,
+            theme: 'grid',
+            headStyles: { fillColor: [0, 0, 0], textColor: [255, 255, 255] },
+            alternateRowStyles: { fillColor: [240, 240, 240] },
+        });
+
+        // 5. Add Totals at the bottom right
+        // Safely check for finalY in case the table is empty
+        const finalY = doc.lastAutoTable ? doc.lastAutoTable.finalY : 55;
+
+        doc.setFontSize(11);
+        doc.setTextColor(0);
+        doc.text(`Total Excl: ${totals.totalExcl.toFixed(2)}`, 140, finalY + 10);
+        doc.text(`Total Tax: ${totals.totalTax.toFixed(2)}`, 140, finalY + 18);
+
+        doc.setFont("helvetica", "bold");
+        doc.text(`Total Incl: ${totals.totalIncl.toFixed(2)}`, 140, finalY + 26);
+
+        // 6. Trigger the download
+        doc.save(`Invoice_${formData.invoiceNo || 'Draft'}.pdf`);
+    };
+
     const handleSave = async () => {
         setError(null);
         try {
@@ -214,13 +289,23 @@ useEffect(() => {
                 <div className="border-b-2 border-black bg-gray-200 p-4 flex justify-between items-center">
                     <h1 className="text-xl font-bold">Sales Order Form</h1>
                     <div className="flex gap-4">
-                        <button 
+                        {/* ONLY show PDF Export if the order is already saved (has an ID) */}
+                        {id && (
+                            <button
+                                onClick={generatePDF}
+                                type="button"
+                                className="border-2 border-black bg-yellow-400 text-black px-6 py-1 font-bold shadow-[2px_2px_0px_rgba(0,0,0,1)] hover:bg-yellow-500 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all flex items-center gap-2"
+                            >
+                                📄 Export PDF
+                            </button>
+                        )}
+                        <button
                             onClick={handleSave}
                             className="border-2 border-black bg-blue-500 text-white px-8 py-1 font-bold shadow-[2px_2px_0px_rgba(0,0,0,1)] hover:bg-blue-600 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all"
                         >
                             Save
                         </button>
-                        <button 
+                        <button
                             onClick={() => navigate('/')}
                             className="border-2 border-black bg-white px-6 py-1 font-bold shadow-[2px_2px_0px_rgba(0,0,0,1)] hover:bg-gray-50 active:translate-x-[2px] active:translate-y-[2px] active:shadow-none transition-all"
                         >

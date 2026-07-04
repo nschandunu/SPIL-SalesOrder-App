@@ -6,6 +6,8 @@ import toast from 'react-hot-toast';
 import api from '../services/api';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import useDropdownData from '../hooks/useDropdownData';
+import { calculateOrderTotals } from '../utils/calculations';
 
 // Import our new architectural primitives
 import Button from '../components/Button';
@@ -18,8 +20,7 @@ export default function SalesOrder() {
     const dispatch = useDispatch();
     const { id } = useParams();
 
-    const [clients, setClients] = useState([]);
-    const [itemsList, setItemsList] = useState([]);
+    const { clients, itemsList } = useDropdownData();
 
     const [formData, setFormData] = useState({
         clientId: '',
@@ -39,11 +40,6 @@ export default function SalesOrder() {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const clientsRes = await api.get('/Clients');
-                const itemsRes = await api.get('/Items');
-                setClients(clientsRes.data);
-                setItemsList(itemsRes.data);
-
                 if (id) {
                     const orderRes = await api.get(`/Orders/${id}`);
                     const order = orderRes.data;
@@ -61,7 +57,7 @@ export default function SalesOrder() {
                         referenceNo: order.referenceNo || '',
                         note: order.note || '',
                         orderItems: order.orderItems.map(item => {
-                            const foundItem = itemsRes.data.find(i => i.id === item.itemId);
+                            const foundItem = itemsList.find(i => i.id === item.itemId);
                             return {
                                 itemId: item.itemId,
                                 description: foundItem ? foundItem.description : '',
@@ -78,7 +74,7 @@ export default function SalesOrder() {
             }
         };
         fetchData();
-    }, [id]);
+    }, [id, itemsList]);
 
     const handleInputChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -137,19 +133,7 @@ export default function SalesOrder() {
         setFormData({ ...formData, orderItems: newItems });
     };
 
-    const calculateTotals = () => {
-        let totalExcl = 0, totalTax = 0, totalIncl = 0;
-        formData.orderItems.forEach(item => {
-            const excl = (parseInt(item.quantity) || 0) * (parseFloat(item.price) || 0);
-            const tax = excl * ((parseFloat(item.taxRate) || 0) / 100);
-            totalExcl += excl;
-            totalTax += tax;
-            totalIncl += (excl + tax);
-        });
-        return { totalExcl, totalTax, totalIncl };
-    };
-
-    const totals = calculateTotals();
+    const totals = calculateOrderTotals(formData.orderItems);
 
     const handleSave = async () => {
         setError(null);

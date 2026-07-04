@@ -5,6 +5,14 @@ The SPIL Sales Order Management System is a full-stack web application designed 
 
 The application allows users to browse existing orders, create new orders with dynamic line-item calculations (exclusive amounts, tax, and inclusive totals), and export finalized invoices as professional PDFs.
 
+## Design Goals
+
+- Maintain a clear separation of concerns.
+- Keep controllers thin by delegating business logic to services.
+- Encapsulate data access using the Repository pattern.
+- Protect the API through DTOs and backend validation.
+- Deliver a responsive, maintainable React frontend using reusable components.
+
 ---
 
 ## 📸 Screenshots
@@ -43,7 +51,7 @@ This project strictly enforces **Separation of Concerns**.
 
 ## ✨ Key Features
 - **Dynamic Form Handling:** Auto-populating customer details and product descriptions based on database selections.
-- **Real-Time Calculations:** Client-side and server-side calculation of line item totals and taxes.
+- **Backend-Validated Calculations:** Financial calculations are performed and validated on the backend to ensure data integrity, while the frontend provides real-time feedback to the user.
 - **Enterprise UI:** Custom, reusable Tailwind UI components (Buttons, Inputs, Selects, Tables) reflecting a consistent design system.
 - **PDF Export:** One-click generation of A4-formatted, professional invoice PDFs.
 - **Robust Data Handling:** DTOs prevent over-posting and ensure secure data transfer.

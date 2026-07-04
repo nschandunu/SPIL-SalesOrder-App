@@ -1,5 +1,3 @@
-
-
 # System Architecture
 
 This document outlines the architectural decisions and structural design of the SPIL Sales Order Management System. The application is divided into a decoupled React single-page application (SPA) and a .NET 8 Web API, communicating via REST.
@@ -41,12 +39,12 @@ SPIL.SalesOrder.API          SPIL.SalesOrder.Infrastructure
 
 #### A. Domain Layer (`SPIL.SalesOrder.Domain`)
 
-- **Responsibility:** Contains the core business entities (`Order`, `OrderItem`, `Client`, `Item`) and business rules.
+- **Responsibility:** Contains the core business entities (`Order`, `OrderItem`, `Client`, `Item`) that represent the business domain.
 - **Dependencies:** None.
 
 #### B. Application Layer (`SPIL.SalesOrder.Application`)
 
-- **Responsibility:** Implements business use cases.
+- **Responsibility:** Implements application use cases, business rules, validation, financial calculations, and coordination between the API and data access layers.
 - **Components:**
   - `OrderService`
   - Interfaces such as `IOrderRepository` and `IOrderService`
@@ -58,12 +56,14 @@ SPIL.SalesOrder.API          SPIL.SalesOrder.Infrastructure
 - **Components:**
   - `ApplicationDbContext`
   - `OrderRepository`
-  - Entity Framework Core configuration
+  - `Entity Framework Core`
+  - `SQL Server persistence`
+  - `Database migrations and seed data`
 
 #### D. API Layer (`SPIL.SalesOrder.API`)
 
 - **Responsibility:** Exposes REST endpoints.
-- **Components:** Thin controllers responsible for request handling, validation, and HTTP responses.
+- **Components:** Thin controllers responsible for routing, model validation, invoking application services, and returning HTTP responses.
 
 ---
 
@@ -86,7 +86,51 @@ The frontend uses a modular, feature-based structure for maintainability and reu
 
 ---
 
-## 4. Key Design Patterns Utilized
+## 4. Request Flow
+
+```text
+React Component
+        │
+        ▼
+Axios Service
+        │
+        ▼
+API Controller
+        │
+        ▼
+Application Service
+        │
+        ▼
+Repository
+        │
+        ▼
+Entity Framework Core
+        │
+        ▼
+SQL Server
+```
+
+Responses travel back through the same layers before being rendered by the React UI.
+
+---
+
+## 5. Business Logic
+
+Financial calculations are implemented within the Application layer.
+
+Although the frontend performs live calculations to improve user experience, the backend recalculates all order totals before persisting data to ensure data integrity and prevent client-side manipulation.
+
+---
+
+## 6. Database Initialization
+
+The application automatically seeds sample **Clients** and **Items** during database initialization.
+
+This enables reviewers to immediately test the Sales Order workflow without first creating master data.
+
+---
+
+## 7. Key Design Patterns Utilized
 
 1. Repository Pattern
 2. Dependency Injection (DI)

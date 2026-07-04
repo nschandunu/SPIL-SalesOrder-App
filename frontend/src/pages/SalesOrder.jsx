@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import api from '../services/api';
 
 export default function SalesOrder() {
@@ -98,7 +99,20 @@ export default function SalesOrder() {
                 }))
             };
 
+            // Send it to secure backend API
             await api.post('/Orders', payload);
+            
+            // Trigger the popup!
+            toast.success('Order successfully saved!', {
+                style: {
+                    border: '2px solid black',
+                    boxShadow: '2px 2px 0px rgba(0,0,0,1)',
+                    fontWeight: 'bold'
+                }
+            });
+            
+            // Navigate back to home
+            navigate('/');
             
             navigate('/');
             

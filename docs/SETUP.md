@@ -15,8 +15,8 @@ Ensure you have the following installed before proceeding:
 
 Before starting the backend, ensure the database connection string is pointing to your local SQL Server instance.
 
-1. Navigate to the API project folder: `backend/SPIL.SalesOrder.API`
-2. Open `appsettings.json` (or `appsettings.Development.json`).
+1. Open the project in your IDE or text editor.
+2. Navigate to: `SPIL.SalesOrder.API/appsettings.json` (or `appsettings.Development.json`).
 3. Update the `DefaultConnection` string to match your SQL Server credentials:
 
 ```json
@@ -31,7 +31,7 @@ Before starting the backend, ensure the database connection string is pointing t
 
 The backend uses Entity Framework Core to automatically generate the database schema and seed the initial master data.
 
-Open a terminal at the root of the **backend solution folder** and run the following commands:
+Open a terminal at the **root of the repository** (where the `.sln` file is located) and run the following commands:
 
 **1. Restore NuGet packages:**
 
@@ -61,15 +61,19 @@ dotnet run --project SPIL.SalesOrder.API
 
 Open a **new terminal window** and navigate to the **frontend folder**:
 
+```bash
+cd frontend
+```
+
 **1. Install npm dependencies:**
 
 ```bash
 npm install
 ```
 
-**2. Configure the API Base URL (Optional):**
+**2. Configure Environment Variables (Optional):**
 
-By default, the Axios service points to standard localhost ports. If your .NET API launched on a different port, create a `.env` file in the frontend root and set the base URL (e.g., `VITE_API_URL=https://localhost:7123/api`).
+By default, the Axios service points to standard localhost ports. If your .NET API launches on a different port, create a `.env` file in the `frontend` root and set the base URL (for example, `VITE_API_URL=https://localhost:7123/api`).
 
 **3. Start the Vite Development Server:**
 

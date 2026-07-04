@@ -64,6 +64,7 @@ export default function Home() {
                                     <th className="border-2 border-black p-2">▼ Order ID</th>
                                     <th className="border-2 border-black p-2">▼ Invoice No</th>
                                     <th className="border-2 border-black p-2">▼ Date</th>
+                                    <th className="border-2 border-black p-2">▼ Note</th>
                                     <th className="border-2 border-black p-2">▼ Total Excl</th>
                                     <th className="border-2 border-black p-2">▼ Total Tax</th>
                                     <th className="border-2 border-black p-2">▼ Total Incl</th>
@@ -82,6 +83,9 @@ export default function Home() {
                                         <td className="border-2 border-black p-2">{order.invoiceNo}</td>
                                         <td className="border-2 border-black p-2">
                                             {new Date(order.invoiceDate).toLocaleDateString()}
+                                        </td>
+                                        <td className="border-2 border-black p-2 truncate max-w-xs" title={order.note}>
+                                            {order.note || '-'}
                                         </td>
                                         <td className="border-2 border-black p-2">{order.totalExcl.toFixed(2)}</td>
                                         <td className="border-2 border-black p-2">{order.totalTax.toFixed(2)}</td>
